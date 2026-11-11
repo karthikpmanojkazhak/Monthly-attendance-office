@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Office Attendance Tracker</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<meta name="theme-color" content="#14232B">
+<style>
+:root{--bg:#EDF1F3;--card:#fff;--ink:#14232B;--mute:#5d7079;--line:#d5dde1;--o:#0F766E;--h:#B7791F;--l:#7A4B8C;--x:#8A99A3;--bad:#B42318;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1a20;--card:#17262e;--ink:#e8f0f3;--mute:#92a6af;--line:#2a3d47;--o:#2DD4BF;--h:#F0B44C;--l:#C79AD8;--x:#7d8f99;--bad:#FF8A7A;color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.4 "Avenir Next","Segoe UI",system-ui,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+main{max-width:520px;margin:0 auto;padding:14px}
+button{font:inherit;color:inherit;cursor:pointer}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.top h1{font-size:18px;margin:0;font-weight:700}
+.nav{display:flex;align-items:center;gap:6px}
+.nav button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:var(--card)}
+.nav span{min-width:120px;text-align:center;font-weight:600}
+.hero{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px}
+.pct{display:flex;align-items:baseline;gap:10px}
+.pct b{font-size:64px;line-height:1;font-weight:800;letter-spacing:-2px}
+.pct small{color:var(--mute)}
+.badge{margin-left:auto;padding:4px 10px;border-radius:99px;font-size:13px;font-weight:700;color:#fff}
+.bar{position:relative;height:14px;border-radius:7px;background:var(--line);margin:16px 0 6px}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:7px;background:var(--o);transition:width .3s}
+.bar u{position:absolute;top:-5px;bottom:-5px;width:3px;background:var(--ink);border-radius:2px}
+.cut{display:flex;justify-content:space-between;align-items:center;color:var(--mute);font-size:13px}
+.cut input{width:64px;font:inherit;font-weight:700;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:4px}
+.msg{margin:12px 0 0;padding:10px 12px;border-radius:10px;background:var(--bg);font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.stats div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center}
+.stats b{display:block;font-size:22px}
+.stats span{font-size:12px;color:var(--mute)}
+.today{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px}
+.today p{margin:0 0 8px;font-size:14px;color:var(--mute)}
+.btns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.btns button{padding:10px 2px;border-radius:10px;border:2px solid transparent;font-weight:600;font-size:14px;background:var(--bg)}
+.btns button.sel{color:#fff}
+.dow,.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{font-size:12px;color:var(--mute);text-align:center;margin-bottom:4px}
+.d{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:15px;padding:0;position:relative}
+.d em{font-style:normal;font-size:10px;font-weight:700;margin-top:1px}
+.d.we{background:transparent;color:var(--mute)}
+.d.tod{outline:2px solid var(--ink);outline-offset:1px}
+.d.miss::after{content:"";position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--bad)}
+.O{background:var(--o)!important;color:#fff;border-color:transparent}.H{background:var(--h)!important;color:#fff;border-color:transparent}.L{background:var(--l)!important;color:#fff;border-color:transparent}.X{background:var(--x)!important;color:#fff;border-color:transparent}
+@media (prefers-color-scheme:dark){.O,.H,.L,.X,.btns button.sel{color:#0e1a20}}
+.leg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--mute);margin:12px 2px}
+.leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px}
+.foot{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.foot button{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:13px}
+dialog{border:0;border-radius:16px;padding:16px;background:var(--card);color:var(--ink);width:min(92vw,360px)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog h2{margin:0 0 10px;font-size:16px}
+dialog .btns{grid-template-columns:1fr 1fr}
+</style>
+</head>
+<body>
+<main>
+ <div class="top"><h1>Office attendance</h1>
+  <div class="nav"><button id="prev" aria-label="Previous month">‹</button><span id="mon"></span><button id="next" aria-label="Next month">›</button></div></div>
+ <section class="hero">
+  <div class="pct"><b id="pct">0%</b><small>work from office</small><span class="badge" id="badge"></span></div>
+  <div class="bar"><i id="fill"></i><u id="mark"></u></div>
+  <div class="cut"><span>WFO ÷ (WFO + WFH) × 100</span><label>Cutoff <input id="cut" type="number" min="1" max="100" inputmode="numeric">%</label></div>
+  <p class="msg" id="msg"></p>
+ </section>
+ <section class="stats" id="stats"></section>
+ <section class="today"><p id="tl">Mark today</p><div class="btns" id="tb"></div></section>
+ <div class="dow"><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span></div>
+ <div class="grid" id="grid"></div>
+ <div class="leg"><span><i style="background:var(--o)"></i>Office</span><span><i style="background:var(--h)"></i>Home</span><span><i style="background:var(--l)"></i>Leave</span><span><i style="background:var(--x)"></i>Holiday</span><span>Red dot: past weekday not marked</span></div>
+ <div class="foot"><button id="exp">Export backup</button><button id="imp">Import backup</button><input type="file" id="file" accept="application/json" hidden></div>
+</main>
+<dialog id="dlg"><h2 id="dt"></h2><div class="btns" id="db"></div></dialog>
+<script>
+var ST={O:"Office",H:"Home",L:"Leave",X:"Holiday"},KEY="officeAttendance.v1",data={cutoff:70,days:{}};
+try{var s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&s.days)data=s}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}}
+var now=new Date(),cur=new Date(now.getFullYear(),now.getMonth(),1),pick=null;
+function key(y,m,d){return y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0")}
+var todayKey=key(now.getFullYear(),now.getMonth(),now.getDate());
+function $(i){return document.getElementById(i)}
+function set(k,v){if(v)data.days[k]=v;else delete data.days[k];save();render()}
+function btns(el,k,after){el.innerHTML="";Object.keys(ST).concat(["-"]).forEach(function(c){
+ var b=document.createElement("button");b.textContent=c==="-"?"Clear":ST[c];
+ if(data.days[k]===c){b.className="sel "+c}
+ b.onclick=function(){set(k,c==="-"?null:c);if(after)after()};el.appendChild(b)})}
+function render(){
+ var y=cur.getFullYear(),m=cur.getMonth(),n=new Date(y,m+1,0).getDate(),first=(new Date(y,m,1).getDay()+6)%7;
+ $("mon").textContent=cur.toLocaleDateString("en-US",{month:"long",year:"numeric"});
+ $("cut").value=data.cutoff;
+ var c={O:0,H:0,L:0,X:0},rem=0,missed=0,g=$("grid");g.innerHTML="";
+ for(var i=0;i<first;i++)g.appendChild(document.createElement("span"));
+ for(var d=1;d<=n;d++){
+  var k=key(y,m,d),v=data.days[k],dow=(first+d-1)%7,we=dow>4;
+  if(v)c[v]++;
+  else if(!we){if(k>=todayKey)rem++;else missed++}
+  var b=document.createElement("button");
+  b.className="d"+(v?" "+v:"")+(we&&!v?" we":"")+(k===todayKey?" tod":"")+(!v&&!we&&k<todayKey?" miss":"");
+  b.innerHTML=d+(v?"<em>"+v+"</em>":"");
+  b.setAttribute("aria-label",k+(v?" "+ST[v]:""));
+  (function(k,d){b.onclick=function(){pick=k;$("dt").textContent=new Date(y,m,d).toLocaleDateString("en-US",{weekday:"long",day:"numeric",month:"long"});btns($("db"),k,function(){$("dlg").close()});$("dlg").showModal()}})(k,d);
+  g.appendChild(b)}
+ var w=c.O+c.H,p=w?c.O/w*100:0,cut=data.cutoff,ok=w>0&&p>=cut;
+ $("pct").textContent=(w?(Math.round(p*10)/10):0)+"%";
+ $("fill").style.width=Math.min(100,p)+"%";$("mark").style.left="calc("+cut+"% - 1px)";
+ var bd=$("badge");bd.textContent=w?(ok?"On target":"Below target"):"No data";bd.style.background=w?(ok?"var(--o)":"var(--bad)"):"var(--x)";
+ $("fill").style.background=ok||!w?"var(--o)":"var(--bad)";
+ var tot=w+rem,need=Math.max(0,Math.ceil(cut/100*tot-1e-9)-c.O),msg;
+ if(!rem&&!w)msg="Nothing recorded yet. Tap a day to start.";
+ else if(!rem)msg=ok?"Month closed on target.":"Month closed below the "+cut+"% target.";
+ else if(need>rem)msg="Target out of reach: even "+rem+" more office days give "+Math.round((c.O+rem)/tot*1000)/10+"%.";
+ else if(need===0)msg="Target secured. If all "+rem+" remaining weekdays are working days, you can stay home on all of them.";
+ else msg="Need "+need+" more office day"+(need>1?"s":"")+" out of "+rem+" remaining weekdays ("+(rem-need)+" can be home).";
+ if(missed)msg+=" "+missed+" past weekday"+(missed>1?"s":"")+" unmarked.";
+ $("msg").textContent=msg;
+ $("stats").innerHTML=[["Office",c.O],["Home",c.H],["Leave",c.L],["Holiday",c.X]].map(function(r){return"<div><b>"+r[1]+"</b><span>"+r[0]+"</span></div>"}).join("");
+ var t=y===now.getFullYear()&&m===now.getMonth();$("tl").parentNode.style.display=t?"":"none";
+ if(t){$("tl").textContent="Mark today";btns($("tb"),todayKey)}}
+$("prev").onclick=function(){cur.setMonth(cur.getMonth()-1);render()};
+$("next").onclick=function(){cur.setMonth(cur.getMonth()+1);render()};
+$("cut").onchange=function(){var v=Math.max(1,Math.min(100,parseFloat(this.value)||70));data.cutoff=v;save();render()};
+$("dlg").onclick=function(e){if(e.target===this)this.close()};
+$("exp").onclick=function(){var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:"application/json"}));a.download="attendance-backup.json";a.click()};
+$("imp").onclick=function(){$("file").click()};
+$("file").onchange=function(){var f=this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var s=JSON.parse(r.result);if(s&&s.days){data=s;save();render()}else alert("Not a valid backup file.")}catch(e){alert("Not a valid backup file.")}};r.readAsText(f)};
+render();
+if("serviceWorker"in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
+</script>
+</body>
+</html>
